@@ -1,0 +1,4 @@
+idea/
+files/
+# Project exclude paths
+/target/
