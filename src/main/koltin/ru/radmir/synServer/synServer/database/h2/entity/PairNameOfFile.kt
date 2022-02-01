@@ -1,19 +1,20 @@
 package ru.radmir.synServer.synServer.database.h2.entity
 
+import ru.radmir.synServer.synServer.init.Vars
 import javax.persistence.*
 
 @Entity
-@Table(name = "pair_name_of_folder_and_name_file")
+@Table(name = Vars.h2PairNameOfFileTableName)
 class PairNameOfFile() {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private val id: Long? = null
 
-    @Column(name = "name_dir")
+    @Column(name = Vars.h2PairNameOfFileColumnNameDir)
     private var nameDir: String? = null
 
-    @Column(name = "name_file")
+    @Column(name = Vars.h2PairNameOfFileColumnNameFile)
     private var nameFile: String? = null
 
     fun getNameDir() = nameDir

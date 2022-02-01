@@ -15,7 +15,7 @@ class DetectorOfFiles() {
     @Autowired
     private lateinit var storageFile: PairNameOfFileService
 
-    private val root = "files"
+    private val root = Vars.configRootDirectory
 
     fun start(){
         File(root).mkdir() // создание директории если она не создана
@@ -30,10 +30,10 @@ class DetectorOfFiles() {
         if (!listOfFolder.isNullOrEmpty()) {
             for (f in listOfFolder) {
                 if (!f.isDirectory) {
-                    throw Exception("тут есть посторонний файл: $f")
+                    throw Exception("${Vars.filesErrorsThereIsAForeignFile}: $f")
                 }
-                if (f.name.split("_").size != 2) {
-                    throw Exception("неправильное имя диреткории: $f")
+                if (f.name.split(Vars.filesUnderscore).size != 2) {
+                    throw Exception("${Vars.filesErrorsWrongDirectoryName}: $f")
                 }
             }
         }
@@ -52,10 +52,10 @@ class DetectorOfFiles() {
                     lateinit var firstName: String
                     lateinit var lastName: String
                     try {
-                        firstName = f.name.split("_")[0]
-                        lastName = f.name.split("_")[1]
+                        firstName = f.name.split(Vars.filesUnderscore)[0]
+                        lastName = f.name.split(Vars.filesUnderscore)[1]
                     } catch (e: Exception){
-                        throw Exception("непонтяная диреткория ${f.name}")
+                        throw Exception("${Vars.filesErrorsIncomprehensibleDir}: ${f.name}")
                     }
 
                     val namesOfFolder = storageFolder.getFolder(firstName)
@@ -82,7 +82,7 @@ class DetectorOfFiles() {
                 }
 
                 if (f.isFile &&
-                    f.name.split("&&&").size == 2) {
+                    f.name.split(Vars.filesDelimiterBetweenPathAndName).size == 2) {
                     val tempFolder = nameDir.split(File.separator).last()
                     val tempFile = f.name
                     isAdded = false
@@ -103,7 +103,7 @@ class DetectorOfFiles() {
                         storageFile.setFile(tempFolder, tempFile)
                     }
                 } else{
-                    throw Exception("неопнятный файл: ${f.name}")
+                    throw Exception("${Vars.filesErrorsIncomprehensibleFile}: ${f.name}")
                 }
             }
         }

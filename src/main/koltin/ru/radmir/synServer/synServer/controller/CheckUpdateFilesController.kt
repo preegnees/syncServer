@@ -15,6 +15,7 @@ import ru.radmir.synServer.synServer.encryption.Cryptographer
 import ru.radmir.synServer.synServer.hashcheck.HashChecker
 import ru.radmir.synServer.synServer.init.DetectorOfFiles
 import ru.radmir.synServer.synServer.init.Init
+import ru.radmir.synServer.synServer.init.Vars
 import javax.annotation.PostConstruct
 import javax.servlet.http.HttpServletRequest
 
@@ -41,21 +42,24 @@ class CheckUpdateFilesController {
         init.start()
     }
 
-    @GetMapping("/check_update_files")
+    @GetMapping("/${Vars.netLinkCheckUpdateFiles}")
     fun checkUpdateFiles(request: HttpServletRequest): String{
-        val myName = request.getParameter("name")
+        val myNameEncrypted = request.getParameter(Vars.netLinkUpdateRequestParameterName)
         // тут можно попросить только свои фалы, это отрабатывает только тогда, когда мы указалаи только свой никнейм
-        val me = request.getParameter("me") // может быть null
+        val meEncrypted = request.getParameter(Vars.netLinkUpdateRequestParameterMe)
 
-        //myName = cryptographer.decrypt(myName)
+        // start decrypt
+        val myName = cryptographer.decryptString(myNameEncrypted)
+        val me = cryptographer.decryptString(meEncrypted)
+        // end decrypt
 
         // проверка имени пользователя на то, что оно не повторялось прежде (name, ip)
-        val ip = storageNameIp.getHash(myName)
+        val ip = storageNameIp.get(myName)
         if (ip!!.isEmpty()) {
-            storageNameIp.setHash(myName, request.remoteAddr)
+            storageNameIp.set(myName, request.remoteAddr)
         } else {
             if (ip != request.remoteAddr){
-                return "-1"
+                return Vars.netServerResponseUsernameAlreadyTaken
             }
         }
 
@@ -67,19 +71,19 @@ class CheckUpdateFilesController {
                 // потом просто удалить когда к нему обратяться и не найдут
                 val namesFolders = folderService.getFolder(myName)
                 lateinit var namesFiles: MutableList<PairNameOfFile?>
-                val forJsonResponse = mutableListOf<Server>()
+                val forJsonResponse = ArrayList<Server>()
 
                 if (me.isNullOrEmpty()){
                     for (i in namesFolders){
-                        namesFiles = (fileService.getFile(i?.getFirstName() + "_" + i?.getLastName()))
+                        namesFiles = (fileService.getFile(i?.getFirstName() + Vars.filesUnderscore + i?.getLastName()))
                         for (j in namesFiles){
                             forJsonResponse.add(Server(j?.getNameDir()!!, j.getNameFile()!!))
                         }
                     }
                 } else {
                     for (i in namesFolders){
-                        val nameDir = i?.getFirstName() + "_" + i?.getLastName()
-                        if (nameDir == myName + "_" + myName){
+                        val nameDir = i?.getFirstName() + Vars.filesUnderscore + i?.getLastName()
+                        if (nameDir == myName + Vars.filesUnderscore + myName){
                             namesFiles = (fileService.getFile(nameDir))
                             for (j in namesFiles){
                                 forJsonResponse.add(Server(j?.getNameDir()!!, j.getNameFile()!!))
@@ -87,11 +91,23 @@ class CheckUpdateFilesController {
                         }
                     }
                 }
-                val creatorJsonUpdatedFiles = CreatorJsonUpdatedFiles()
-                val rootUpdateFiles = RootUpdateFiles(forJsonResponse as ArrayList<Server>)
-                json = creatorJsonUpdatedFiles.start(rootUpdateFiles)
+                // start encrypt
+                val forJsonResponseEncrypted: ArrayList<Server> = arrayListOf()
+                for (i in forJsonResponse) {
+                    forJsonResponseEncrypted.add(
+                        Server(
+                            nameDir = cryptographer.encryptString(i.nameDir!!),
+                            nameFile = cryptographer.encryptString(i.nameFile!!),
+                            sizeFile = cryptographer.encryptString(i.sizeFile!!),
+                            timeFile = cryptographer.encryptString(i.timeFile!!)
+                        )
+                    )
+                }
+                // end encrypt
+                val rootUpdateFiles = RootUpdateFiles(forJsonResponseEncrypted)
+                json = CreatorJsonUpdatedFiles().start(rootUpdateFiles)
             } else {
-                json = "{\"нет изменений\"}"
+                json = Vars.netServerResponseNoUpdates
             }
         } catch (e: Exception) {
             detectorOfFiles.start()

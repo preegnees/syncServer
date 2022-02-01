@@ -2,6 +2,7 @@ package ru.radmir.synServer.synServer.encryption
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import ru.radmir.synServer.synServer.init.Vars
 import java.io.File
 import java.security.spec.KeySpec
 import java.util.*
@@ -21,15 +22,15 @@ class Cryptographer() {
         password = startReadPasswordFromConfig.start()
     }
 
-    fun encrypt(input: String): String {
-        val cipher: Cipher = Cipher.getInstance("AES")
+    fun encryptString(input: String): String {
+        val cipher: Cipher = Cipher.getInstance(Vars.cryptoMethodCipher)
         cipher.init(Cipher.ENCRYPT_MODE, getKeyFromPassword())
         val cipherText: ByteArray = cipher.doFinal(input.toByteArray())
         return Base64.getEncoder()
             .encodeToString(cipherText)
     }
-    fun decrypt(cipherText: String?): String {
-        val cipher = Cipher.getInstance("AES")
+    fun decryptString(cipherText: String /*maybe base64*/): String {
+        val cipher = Cipher.getInstance(Vars.cryptoMethodCipher)
         cipher.init(Cipher.DECRYPT_MODE, getKeyFromPassword())
         val plainText = cipher.doFinal(
             Base64.getDecoder()
@@ -38,26 +39,24 @@ class Cryptographer() {
         return String(plainText)
     }
 
-    fun encryptFile(inputFile: File): String {
-        val cipher: Cipher = Cipher.getInstance("AES")
+    fun encryptFile(inputFile: ByteArray): String {
+        val cipher: Cipher = Cipher.getInstance(Vars.cryptoMethodCipher)
         cipher.init(Cipher.ENCRYPT_MODE, getKeyFromPassword())
-        val cipherText: ByteArray = cipher.doFinal(inputFile.readBytes())
+        val cipherText: ByteArray = cipher.doFinal(inputFile)
         return Base64.getEncoder()
             .encodeToString(cipherText)
     }
-    fun decryptFile(cipherFile: File): String {
-        val cipher = Cipher.getInstance("AES")
+    fun decryptFile(cipherFile: String /*maybe base64*/): String /*after convert this base64 to byteArray*/ {
+        val cipher = Cipher.getInstance(Vars.cryptoMethodCipher)
         cipher.init(Cipher.DECRYPT_MODE, getKeyFromPassword())
-        val plainText = cipher.doFinal(
-            Base64.getDecoder()
-                .decode(cipherFile.readBytes())
+        return Base64.getEncoder().encodeToString(
+            cipher.doFinal(Base64.getDecoder().decode(cipherFile.toByteArray()))
         )
-        return String(plainText)
     }
 
     private fun getKeyFromPassword(): SecretKey {
         val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
         val spec: KeySpec = PBEKeySpec(password.getPassword().toCharArray(), "salt".toByteArray(), 65536, 256)
-        return SecretKeySpec(factory.generateSecret(spec).encoded, "AES")
+        return SecretKeySpec(factory.generateSecret(spec).encoded, Vars.cryptoMethodCipher)
     }
 }

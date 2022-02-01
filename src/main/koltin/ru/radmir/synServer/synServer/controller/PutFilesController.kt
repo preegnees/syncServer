@@ -5,12 +5,15 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.ResponseBody
+import ru.radmir.synServer.synServer.controller.json.Client
 import ru.radmir.synServer.synServer.controller.json.CreatorJsonPutFiles
 import ru.radmir.synServer.synServer.database.h2.entity.PairNameOfFolder
 import ru.radmir.synServer.synServer.database.h2.service.PairNameOfFolderService
 import ru.radmir.synServer.synServer.database.swaydb.Swaydb
+import ru.radmir.synServer.synServer.encryption.Cryptographer
 import ru.radmir.synServer.synServer.init.DetectorOfFiles
 import ru.radmir.synServer.synServer.init.Init
+import ru.radmir.synServer.synServer.init.Vars
 import java.io.File
 import java.nio.file.Paths
 import javax.annotation.PostConstruct
@@ -20,7 +23,6 @@ import kotlin.io.path.createDirectories
 @Controller
 @ResponseBody
 class PutFilesController {
-
     @Autowired
     private lateinit var folderService: PairNameOfFolderService
     @Autowired
@@ -29,51 +31,74 @@ class PutFilesController {
     private lateinit var storageNameIp: Swaydb
     @Autowired
     private lateinit var init: Init
+    @Autowired
+    private lateinit var cryptographer: Cryptographer
 
     @PostConstruct
     fun init(){
         init.start()
     }
 
-    @PostMapping("/put_files", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @PostMapping("/${Vars.netLinkPutFiles}", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun putFiles(request: HttpServletRequest): String {
         val json = request.inputStream.readBytes().toString(Charsets.UTF_8)
 
+        // start decrypt
+        val myNameEncrypted = request.getParameter(Vars.netLinkPutRequestParameterName)
+        val myName = cryptographer.decryptString(myNameEncrypted)
+        val newFilesEncrypted = CreatorJsonPutFiles().start(json)
+        val newFiles = arrayListOf<Client>()
+        for (i in newFilesEncrypted.client) {
+            newFiles.add(
+                Client(
+                    name = cryptographer.decryptString(i.name!!),
+                    pairName = cryptographer.decryptString(i.pairName!!),
+                    fileName = cryptographer.decryptString(i.fileName!!),
+                    sizeFile = cryptographer.decryptString(i.sizeFile!!),
+                    timeFile = cryptographer.decryptString(i.timeFile!!),
+                    contentOfFile = i.contentOfFile!!
+                )
+            )
+        }
+        // end decrypt
+
         // проверка имени пользователя на то, что оно не повторялось прежде (name, ip)
-        val myName = request.getParameter("name")
-        val ip = storageNameIp.getHash(myName)
+        val ip = storageNameIp.get(myName)
         if (ip!!.isEmpty()) {
-            storageNameIp.setHash(myName, request.remoteAddr)
+            storageNameIp.set(myName, request.remoteAddr)
         } else {
             if (ip != request.remoteAddr){
-                return "-1"
+                return Vars.netServerResponseUsernameAlreadyTaken
             }
         }
 
-        val newFiles = CreatorJsonPutFiles().start(json)
         lateinit var namesFolders: MutableList<PairNameOfFolder?>
         var desiredFolder: String
         var count = 0
-        val root = "files" + File.separator
+        val root = Vars.configRootDirectory + File.separator
         try {
-            // проверить что name и pair_name будут равны
-            for (f in newFiles.client){
+            for (f in newFiles){
                 if (!f.name.equals(f.pairName)) {
                     namesFolders = folderService.getFolder(f.name!!)
-                    // нужно запретить указывать одинаковое name и pairName
                     for (j in namesFolders) {
                         if (f.pairName == j?.getLastName() || f.pairName == j?.getFirstName()) {
                             count++
                             if (count == 1) {
-                                desiredFolder = j?.getFirstName() + "_" + j?.getLastName()
+                                desiredFolder = j?.getFirstName() + Vars.filesUnderscore + j?.getLastName()
                                 // получить все файлы и сравнить с нынешним, что бы не было совпадений
                                 val files = File(root + desiredFolder).listFiles()
                                 if (files!!.isNotEmpty()) {
                                     val x = File(root + desiredFolder + File.separator + f.fileName)
+                                    // вынести в метод
                                     if (!x.exists()) {
-                                        x.createNewFile()
-                                        x.writeText(f.contentOfFile!!)
-                                        // detectorOfFiles.start()
+                                        if (!x.exists()) {
+                                            x.createNewFile()
+                                        }
+                                        val toFile = Vars.otherSaveFileSizeOfFile + f.sizeFile + Vars.otherSaveFileSizeOfFile +
+                                                Vars.otherSaveTimeUpdateOfFile + f.timeFile + Vars.otherSaveTimeUpdateOfFile +
+                                                Vars.otherSaveContentOfFile + f.contentOfFile + Vars.otherSaveContentOfFile
+                                        x.writeText(toFile)
+                                        detectorOfFiles.start()
                                     }
                                 } else {
                                     count--
@@ -83,25 +108,27 @@ class PutFilesController {
                     }
                 }
                 if (count == 0 || f.name.equals(f.pairName)) {
-                    desiredFolder = f.name + "_" + f.pairName
+                    desiredFolder = f.name + Vars.filesUnderscore + f.pairName
                     Paths.get(root + desiredFolder).createDirectories()
                     val x = File(root + desiredFolder + File.separator +f.fileName)
+                    // вынести в метод
                     if (!x.exists()) {
                         x.createNewFile()
-                        x.writeText(f.contentOfFile!!)
                     }
+                    val toFile = Vars.otherSaveFileSizeOfFile + f.sizeFile + Vars.otherSaveFileSizeOfFile +
+                            Vars.otherSaveTimeUpdateOfFile + f.timeFile + Vars.otherSaveTimeUpdateOfFile +
+                            Vars.otherSaveContentOfFile + f.contentOfFile + Vars.otherSaveContentOfFile
+                    x.writeText(toFile)
                     detectorOfFiles.start()
                 } else {
-                    // тут может начаться бесконечная петля, потому что мы создали новый файл с новым имененм
-                    // и потом мы его вернем на сервер, наврное лучше на сервере прибалвлять дату
                     detectorOfFiles.start()
-                    throw Exception("неизвестная ошибка")
+                    throw Exception(Vars.netErrorsUnknownError)
                 }
             }
         } catch (e: Exception){
             detectorOfFiles.start()
         }
         detectorOfFiles.start()
-        return "ok"
+        return Vars.netServerResponseOk
     }
 }

@@ -3,18 +3,21 @@ package ru.radmir.synServer.synServer.controller.json
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import org.springframework.stereotype.Component
+import ru.radmir.synServer.synServer.init.Vars
 
 @Component
 data class Client (
-    @SerializedName("name") val name : String? = null,
-    @SerializedName("pair_name") val pairName : String? = null,
-    @SerializedName("file_name") val fileName : String? = null,
-    @SerializedName("content_of_file") val contentOfFile : String? = null
+    @SerializedName(Vars.jsonNamePutClient) val name : String? = null,
+    @SerializedName(Vars.jsonPairNamePutClient) val pairName : String? = null,
+    @SerializedName(Vars.jsonFileNamePutClient) val fileName : String? = null,
+    @SerializedName(Vars.jsonContentOfFilePutClient) val contentOfFile : String? = null,
+    @SerializedName(Vars.jsonSizeOfFilePutClient) val sizeFile: String? = null,
+    @SerializedName(Vars.jsonTimeOfFilePutClient) val timeFile: String? = null
 )
 
 @Component
 data class RootPutFiles (
-    @SerializedName("client") var client: ArrayList<Client> = arrayListOf()
+    @SerializedName(Vars.jsonClientPutClient) var client: ArrayList<Client> = arrayListOf()
 )
 
 @Component

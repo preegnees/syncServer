@@ -5,14 +5,13 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.ResponseBody
-import ru.radmir.synServer.synServer.controller.json.CreatorJsonGiveFileServer
-import ru.radmir.synServer.synServer.controller.json.CreatorJsonGiveFilesClient
-import ru.radmir.synServer.synServer.controller.json.RootGiveFilesServer
-import ru.radmir.synServer.synServer.controller.json.ServerGive
+import ru.radmir.synServer.synServer.controller.json.*
 import ru.radmir.synServer.synServer.database.h2.service.PairNameOfFolderService
 import ru.radmir.synServer.synServer.database.swaydb.Swaydb
+import ru.radmir.synServer.synServer.encryption.Cryptographer
 import ru.radmir.synServer.synServer.init.DetectorOfFiles
 import ru.radmir.synServer.synServer.init.Init
+import ru.radmir.synServer.synServer.init.Vars
 import java.io.File
 import java.util.*
 import javax.annotation.PostConstruct
@@ -23,40 +22,52 @@ import kotlin.collections.ArrayList
 @ResponseBody
 class GiveFilesController {
     @Autowired
-    private lateinit var folderService: PairNameOfFolderService
-    @Autowired
-    private lateinit var detectorOfFiles: DetectorOfFiles
-    @Autowired
     private lateinit var storageNameIp: Swaydb
     @Autowired
     private lateinit var init: Init
+    @Autowired
+    private lateinit var cryptographer: Cryptographer
 
     @PostConstruct
     fun init(){
         init.start()
     }
 
-    @PostMapping("/give_files", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @PostMapping("/${Vars.netLinkGiveFiles}", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun giveFiles(request: HttpServletRequest): String {
         val json = request.inputStream.readBytes().toString(Charsets.UTF_8)
+        val myNameEncrypted = request.getParameter(Vars.netLinkGiveRequestParameterName)
+
+        // start decrypt
+        val myName = cryptographer.decryptString(myNameEncrypted) // parameter
+        val newFilesFromClientEncrypted = CreatorJsonGiveFilesClient().start(json)
+        val newFilesFromClient = arrayListOf<ClientGive>()
+        for (i in newFilesFromClientEncrypted.clientGive) {
+            newFilesFromClient.add(
+                ClientGive(
+                    nameDir = cryptographer.decryptString(i.nameDir!!),
+                    nameFile = cryptographer.decryptString(i.nameFile!!),
+                    sizeFile = cryptographer.decryptString(i.sizeFile!!),
+                    timeFile = cryptographer.decryptString(i.timeFile!!)
+                )
+            )
+        }
+        // end decrypt
 
         // проверка имени пользователя на то, что оно не повторялось прежде (name, ip)
-        val myName = request.getParameter("name")
-        val ip = storageNameIp.getHash(myName)
+        val ip = storageNameIp.get(myName)
         if (ip!!.isEmpty()) {
-            storageNameIp.setHash(myName, request.remoteAddr)
+            storageNameIp.set(myName, request.remoteAddr)
         } else {
             if (ip != request.remoteAddr){
-                return "-1"
+                return Vars.netServerResponseUsernameAlreadyTaken
             }
         }
-        val listFilesForSendClient = mutableListOf<ServerGive>()
-        val newFilesFromClient = CreatorJsonGiveFilesClient().start(json)
-        for (i in newFilesFromClient.clientGive) {
-            val root = "files" + File.separator
-            val temp = i.nameDir!!.split("_")
+        val listFilesForSendClient = arrayListOf<ServerGive>()
+        for (i in newFilesFromClient) {
+            val root = Vars.configRootDirectory + File.separator
+            val temp = i.nameDir!!.split(Vars.filesUnderscore)
 
-            // это все нужно зашифровать !!
             val fileName = i.nameFile
             val pairName: String = if (myName == temp[0] && myName == temp[1]){
                 myName
@@ -64,11 +75,38 @@ class GiveFilesController {
                 if (myName == temp[0]) temp[1] else temp[0]
             }
             val file = File(root + i.nameDir + File.separator + i.nameFile)
-            val contentOfFile = Base64.getEncoder().encodeToString(file.readBytes())
-            listFilesForSendClient
-                .add(ServerGive(pairName = pairName, fileName = fileName, contentOfFile = contentOfFile))
+
+            val fromFile = file.inputStream().readBytes().toString() // file.readText()
+            val sizeFile = fromFile.split(Vars.otherSaveFileSizeOfFile)[1]
+            val timeFile = fromFile.split(Vars.otherSaveTimeUpdateOfFile)[1]
+            val contentOfFile = fromFile.split(Vars.otherSaveContentOfFile)[1]
+
+            listFilesForSendClient.add(
+                ServerGive(
+                    pairName = pairName,
+                    fileName = fileName,
+                    sizeFile = sizeFile,
+                    timeFile = timeFile,
+                    contentOfFile = contentOfFile
+                )
+            )
         }
+
+        // start encrypt
+        val listFilesForSendClientEncrypted = arrayListOf<ServerGive>()
+        for (i in listFilesForSendClient) {
+            listFilesForSendClientEncrypted.add(
+                ServerGive(
+                    pairName = cryptographer.encryptString(i.pairName!!),
+                    fileName = cryptographer.encryptString(i.fileName!!),
+                    sizeFile = cryptographer.encryptString(i.sizeFile!!),
+                    timeFile = cryptographer.encryptString(i.timeFile!!),
+                    contentOfFile = i.contentOfFile
+                )
+            )
+        }
+        // end encrypt
         return CreatorJsonGiveFileServer()
-            .start(RootGiveFilesServer(listFilesForSendClient as ArrayList<ServerGive>))
+            .start(RootGiveFilesServer(listFilesForSendClientEncrypted))
     }
 }
