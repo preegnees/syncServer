@@ -56,7 +56,7 @@ class Cryptographer() {
 
     private fun getKeyFromPassword(): SecretKey {
         val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-        val spec: KeySpec = PBEKeySpec(password.getPassword().toCharArray(), "salt".toByteArray(), 65536, 256)
+        val spec: KeySpec = PBEKeySpec(password.getPassword().toCharArray(), "salt".toByteArray(), 128, 128)
         return SecretKeySpec(factory.generateSecret(spec).encoded, Vars.cryptoMethodCipher)
     }
 }

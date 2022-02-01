@@ -14,6 +14,9 @@ class HashChecker {
     private val root = Vars.configRootDirectory
 
     fun start(name: String, me: Boolean): Boolean{
+        if (me) {
+            return true
+        }
         val oldHash = storage.get(name + me.toString())
         val dirs = getDirs(name) // [path/file, ]
         if (me){ // если только для name

@@ -76,7 +76,7 @@ class GiveFilesController {
             }
             val file = File(root + i.nameDir + File.separator + i.nameFile)
 
-            val fromFile = file.inputStream().readBytes().toString() // file.readText()
+            val fromFile = file.readText(Charsets.UTF_8) // file.readText()
             val sizeFile = fromFile.split(Vars.otherSaveFileSizeOfFile)[1]
             val timeFile = fromFile.split(Vars.otherSaveTimeUpdateOfFile)[1]
             val contentOfFile = fromFile.split(Vars.otherSaveContentOfFile)[1]
