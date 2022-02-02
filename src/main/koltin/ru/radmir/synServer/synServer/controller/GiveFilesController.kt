@@ -76,7 +76,9 @@ class GiveFilesController {
                 if (myName == temp[0]) temp[1] else temp[0]
             }
             val file = File(root + i.nameDir + File.separator + i.nameFile)
-
+            if (!file.exists()) {
+                continue
+            }
             val fromFile = file.readText(Charsets.UTF_8) // file.readText()
             val sizeFile = fromFile.split(Vars.otherSaveFileSizeOfFile)[1]
             val timeFile = fromFile.split(Vars.otherSaveTimeUpdateOfFile)[1]
