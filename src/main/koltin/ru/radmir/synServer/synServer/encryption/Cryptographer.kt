@@ -3,7 +3,6 @@ package ru.radmir.synServer.synServer.encryption
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import ru.radmir.synServer.synServer.init.Vars
-import java.io.File
 import java.security.spec.KeySpec
 import java.util.*
 import javax.annotation.PostConstruct

@@ -45,12 +45,13 @@ class CheckUpdateFilesController {
 
     @GetMapping("/${Vars.netLinkCheckUpdateFiles}")
     fun checkUpdateFiles(request: HttpServletRequest): String{
-        val myNameEncrypted = request.getParameter(Vars.netLinkUpdateRequestParameterName)
+        // val myNameEncrypted = request.getParameter(Vars.netLinkUpdateRequestParameterName)
+        val myName = request.getParameter(Vars.netLinkUpdateRequestParameterName)
         // тут можно попросить только свои фалы, это отрабатывает только тогда, когда мы указалаи только свой никнейм
         val me = request.getParameter(Vars.netLinkUpdateRequestParameterMe)
 
         // start decrypt
-        val myName = cryptographer.decryptString(myNameEncrypted)
+        // val myName = cryptographer.decryptString(myNameEncrypted)
         // end decrypt
 
         // проверка имени пользователя на то, что оно не повторялось прежде (name, ip)
@@ -92,19 +93,6 @@ class CheckUpdateFilesController {
                         )
                     }
                 }
-//                if (me.isNullOrEmpty()){
-
-//                } else {
-//                    for (i in namesFolders){
-//                        val nameDir = i?.getFirstName() + Vars.filesUnderscore + i?.getLastName()
-//                        if (nameDir == myName + Vars.filesUnderscore + myName){
-//                            namesFiles = (fileService.getFile(nameDir))
-//                            for (j in namesFiles){
-//                                forJsonResponse.add(Server(j?.getNameDir()!!, j.getNameFile()!!))
-//                            }
-//                        }
-//                    }
-//                }
                 // start encrypt
                 val forJsonResponseEncrypted: ArrayList<Server> = arrayListOf()
                 for (i in forJsonResponse) {

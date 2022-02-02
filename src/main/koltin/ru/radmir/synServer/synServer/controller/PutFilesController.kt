@@ -41,10 +41,11 @@ class PutFilesController {
     @PostMapping("/${Vars.netLinkPutFiles}", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun putFiles(request: HttpServletRequest): String {
         val json = request.inputStream.readBytes().toString(Charsets.UTF_8)
+        val myName = request.getParameter(Vars.netLinkPutRequestParameterName)
 
         // start decrypt
-        val myNameEncrypted = request.getParameter(Vars.netLinkPutRequestParameterName)
-        val myName = cryptographer.decryptString(myNameEncrypted)
+        // val myNameEncrypted = request.getParameter(Vars.netLinkPutRequestParameterName)
+        // val myName = cryptographer.decryptString(myNameEncrypted)
         val newFilesEncrypted = CreatorJsonPutFiles().start(json)
         val newFiles = arrayListOf<Client>()
         for (i in newFilesEncrypted.client) {

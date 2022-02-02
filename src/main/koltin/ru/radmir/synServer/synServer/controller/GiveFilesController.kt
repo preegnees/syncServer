@@ -36,10 +36,11 @@ class GiveFilesController {
     @PostMapping("/${Vars.netLinkGiveFiles}", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun giveFiles(request: HttpServletRequest): String {
         val json = request.inputStream.readBytes().toString(Charsets.UTF_8)
-        val myNameEncrypted = request.getParameter(Vars.netLinkGiveRequestParameterName)
+//        val myNameEncrypted = request.getParameter(Vars.netLinkGiveRequestParameterName)
+        val myName = request.getParameter(Vars.netLinkGiveRequestParameterName)
 
         // start decrypt
-        val myName = cryptographer.decryptString(myNameEncrypted) // parameter
+        // val myName = cryptographer.decryptString(myNameEncrypted) // parameter
         val newFilesFromClientEncrypted = CreatorJsonGiveFilesClient().start(json)
         val newFilesFromClient = arrayListOf<ClientGive>()
         for (i in newFilesFromClientEncrypted.clientGive) {
