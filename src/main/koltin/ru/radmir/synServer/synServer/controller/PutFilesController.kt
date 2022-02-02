@@ -18,7 +18,6 @@ import java.io.File
 import java.nio.file.Paths
 import javax.annotation.PostConstruct
 import javax.servlet.http.HttpServletRequest
-import kotlin.io.path.createDirectories
 
 @Controller
 @ResponseBody
@@ -109,7 +108,7 @@ class PutFilesController {
                 }
                 if (count == 0 || f.name.equals(f.pairName)) {
                     desiredFolder = f.name + Vars.filesUnderscore + f.pairName
-                    Paths.get(root + desiredFolder).createDirectories()
+                    File(root + desiredFolder).mkdirs() // до это было Paths.get().createdir
                     val x = File(root + desiredFolder + File.separator +f.fileName)
                     // вынести в метод
                     if (!x.exists()) {
