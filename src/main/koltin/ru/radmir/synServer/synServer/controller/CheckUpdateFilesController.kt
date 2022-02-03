@@ -64,13 +64,16 @@ class CheckUpdateFilesController {
             }
         }
 
-        lateinit var json: String
+        var json: String = Vars.otherEmpty
         try {
             val isUpdated = hashChecker.start(myName, !me.isNullOrEmpty())
             if (isUpdated){
                 // тут есть ошибка, что при удалении вручную файла, он остается в базе данных
                 // потом просто удалить когда к нему обратяться и не найдут
                 val namesFolders = folderService.getFolder(myName)
+                if (namesFolders.isEmpty()) {
+                    return json
+                }
                 lateinit var namesFiles: MutableList<PairNameOfFile?>
                 val forJsonResponse = ArrayList<Server>()
                 for (i in namesFolders){

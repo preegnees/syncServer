@@ -17,6 +17,10 @@ class HashChecker {
         if (me) {
             return true
         }
+        if (File(root).listFiles().isNullOrEmpty()) {
+            File(root).mkdir()
+            return true
+        }
         val oldHash = storage.get(name + me.toString())
         val dirs = getDirs(name) // [path/file, ]
         if (me){ // если только для name
