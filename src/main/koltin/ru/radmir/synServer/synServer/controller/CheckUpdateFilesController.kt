@@ -34,7 +34,7 @@ class CheckUpdateFilesController {
     @Autowired
     private lateinit var hashChecker: HashChecker
     @Autowired
-    private lateinit var storageNameIp: Swaydb
+    private lateinit var storage: Swaydb
     @Autowired
     private lateinit var init: Init
 
@@ -55,9 +55,9 @@ class CheckUpdateFilesController {
         // end decrypt
 
         // проверка имени пользователя на то, что оно не повторялось прежде (name, ip)
-        val ip = storageNameIp.get(myName)
+        val ip = storage.get(myName)
         if (ip!!.isEmpty()) {
-            storageNameIp.set(myName, request.remoteAddr)
+            storage.set(myName, request.remoteAddr)
         } else {
             if (ip != request.remoteAddr){
                 return Vars.netServerResponseUsernameAlreadyTaken
@@ -72,6 +72,12 @@ class CheckUpdateFilesController {
                 // потом просто удалить когда к нему обратяться и не найдут
                 val namesFolders = folderService.getFolder(myName)
                 if (namesFolders.isEmpty()) {
+                    // если на сервере нет файлов
+                    return json
+                }
+                if (storage.get(Vars.otherOnStartup) == "") {
+                    // если сервер только включился
+                    storage.set(Vars.otherOnStartup, "false")
                     return json
                 }
                 lateinit var namesFiles: MutableList<PairNameOfFile?>

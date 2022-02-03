@@ -22,7 +22,7 @@ import kotlin.collections.ArrayList
 @ResponseBody
 class GiveFilesController {
     @Autowired
-    private lateinit var storageNameIp: Swaydb
+    private lateinit var storage: Swaydb
     @Autowired
     private lateinit var init: Init
     @Autowired
@@ -56,9 +56,9 @@ class GiveFilesController {
         // end decrypt
 
         // проверка имени пользователя на то, что оно не повторялось прежде (name, ip)
-        val ip = storageNameIp.get(myName)
+        val ip = storage.get(myName)
         if (ip!!.isEmpty()) {
-            storageNameIp.set(myName, request.remoteAddr)
+            storage.set(myName, request.remoteAddr)
         } else {
             if (ip != request.remoteAddr){
                 return Vars.netServerResponseUsernameAlreadyTaken

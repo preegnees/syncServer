@@ -26,6 +26,7 @@ class Vars {
         const val otherSaveFileSizeOfFile = "sizeOfFile_"
         const val otherSaveTimeUpdateOfFile = "timeUpdateOfFile_"
         const val otherSaveContentOfFile = "contentOfFile_"
+        const val otherOnStartup = "onStartup"
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //      crypto
         const val cryptoMethodCipher = "AES"
