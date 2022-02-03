@@ -120,7 +120,7 @@ class PutFilesController {
                     detectorOfFiles.start()
                 } else {
                     detectorOfFiles.start()
-                    throw Exception(Vars.netErrorsUnknownError)
+                    // throw Exception(Vars.netErrorsUnknownError)
                 }
             }
         } catch (e: Exception){

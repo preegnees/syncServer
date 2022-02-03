@@ -38,7 +38,8 @@ class HashChecker {
         }
     }
     private fun hash(path: String){
-       hashAll += File(path).hashCode().toString()
+       hashAll += File(path).hashCode().toString() +
+        File(path).lastModified().hashCode().toString()
     }
     private fun getDirs(name: String): MutableList<String>{
         val files = mutableListOf<String>()
