@@ -83,25 +83,24 @@ class PutFilesController {
                     for (j in namesFolders) {
                         if (f.pairName == j?.getLastName() || f.pairName == j?.getFirstName()) {
                             count++
-                            if (count == 1) {
-                                desiredFolder = j?.getFirstName() + Vars.filesUnderscore + j?.getLastName()
-                                // получить все файлы и сравнить с нынешним, что бы не было совпадений
-                                val files = File(root + desiredFolder).listFiles()
-                                if (!files.isNullOrEmpty()) {
-                                    val x = File(root + desiredFolder + File.separator + f.fileName)
-                                    // вынести в метод
-                                    if (!x.exists()) {
-                                        x.createNewFile()
-                                    }
-                                    val toFile = Vars.otherSaveFileSizeOfFile + f.sizeFile + Vars.otherSaveFileSizeOfFile +
-                                            Vars.otherSaveTimeUpdateOfFile + f.timeFile + Vars.otherSaveTimeUpdateOfFile +
-                                            Vars.otherSaveContentOfFile + f.contentOfFile + Vars.otherSaveContentOfFile
-                                    x.writeText(toFile)
-                                    detectorOfFiles.start()
-                                } else {
-                                    count--
+                            desiredFolder = j?.getFirstName() + Vars.filesUnderscore + j?.getLastName()
+                            // получить все файлы и сравнить с нынешним, что бы не было совпадений
+                            val files = File(root + desiredFolder).listFiles()
+                            if (!files.isNullOrEmpty()) {
+                                val x = File(root + desiredFolder + File.separator + f.fileName)
+                                // вынести в метод
+                                if (!x.exists()) {
+                                    x.createNewFile()
                                 }
+                                val toFile = Vars.otherSaveFileSizeOfFile + f.sizeFile + Vars.otherSaveFileSizeOfFile +
+                                        Vars.otherSaveTimeUpdateOfFile + f.timeFile + Vars.otherSaveTimeUpdateOfFile +
+                                        Vars.otherSaveContentOfFile + f.contentOfFile + Vars.otherSaveContentOfFile
+                                x.writeText(toFile)
+                                detectorOfFiles.start()
+                            } else {
+                                count--
                             }
+
                         }
                     }
                 }
